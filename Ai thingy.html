@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Van Dodge Game + Joke Generator</title>
+  <style>
+    body {
+      font-family: 'Trebuchet MS', sans-serif;
+      background: #fff8f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #ff7f50;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .joke-box {
+      background-color: #fff1e6;
+      border: 3px dotted #ffc9a9;
+      border-radius: 20px;
+      padding: 30px;
+      width: 80%;
+      max-width: 600px;
+      text-align: center;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .joke-text {
+      font-size: 1.5rem;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+      background-color: #ff9f68;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      margin: 10px;
+    }
+
+    button:hover {
+      background-color: #ff7838;
+      transform: scale(1.05);
+    }
+
+    #score, #high-score {
+      font-size: 1.3rem;
+      margin-top: 10px;
+      color: #4caf50;
+    }
+
+    #game-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 30px;
+    }
+
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(10, 40px);
+      grid-template-rows: repeat(10, 40px);
+      gap: 2px;
+      background: #e0f7fa;
+      padding: 5px;
+      border: 3px solid #aaa;
+      margin-top: 10px;
+    }
+
+    .cell {
+      width: 40px;
+      height: 40px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .van {
+      background-color: #ffd180;
+    }
+
+    .tree {
+      background-color: #a5d6a7;
+    }
+
+    .coin {
+      background-color: #fff59d;
+    }
+
+    #game-over {
+      color: red;
+      font-size: 1.5rem;
+      margin-top: 15px;
+      display: none;
+    }
+
+    #sidebar {
+      max-width: 200px;
+      background-color: #fff4e6;
+      border: 2px dashed #ffcc80;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 1rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚐 Van Joke Generator</h1>
+  <div class="joke-box">
+    <div class="joke-text" id="joke-text">
+      Click the button below for a van-tastic laugh! 🧡
+    </div>
+  </div>
+  <button onclick="getJoke()">Tell Me a Joke</button>
+
+  <div id="score">Coins Collected: <span id="coin-count">0</span></div>
+  <div id="high-score">High Score: <span id="high-score-count">0</span></div>
+
+  <div id="game-container">
+    <div id="game-board"></div>
+    <div id="sidebar"><strong>🚐 Vanspiration:</strong><br><span id="message"></span></div>
+  </div>
+
+  <div id="game-over">💥 Game Over! Refresh to play again.</div>
+
+  <script>
+    const jokes = [
+      "🚐 Why did the van break up with the trailer? <br><strong>It felt too hitched.</strong>",
+      "🧰 What do you call a van that tells dad jokes? <br><strong>A 'Vandad' comedian.</strong>",
+      "💤 Why did the van take a nap? <br><strong>Because it was 'exhaust'-ed.</strong>",
+      "🎸 What’s a van’s favorite band? <br><strong>The Rolling Stones, obviously.</strong>",
+      "🧭 Why don’t vans ever get lost? <br><strong>They always follow their 'vanifest destiny'.</strong>",
+      "💎 What do you call a luxury camper van? <br><strong>A Vansion.</strong>",
+      "🕳️ What happens when your van won’t start? <br><strong>You’re in a real van-derground situation.</strong>",
+      "📌 Why did we renovate the van? <br><strong>Because Pinterest told us to.</strong>",
+      "🥤 What’s a van’s favorite drink? <br><strong>Van-illa milkshake.</strong>",
+      "🔥 Our van got tired… <br><strong>So we gave it a brake!</strong>"
+    ];
+
+    const messages = [
+      "Keep rolling — you're doing van-tastic!",
+      "Stay on track, van dreamer!",
+      "You were made for this road!",
+      "Don't stop now — full speed ahead!",
+      "Fuel up with confidence!",
+      "You're steering your own story!",
+      "Cruise through challenges like a pro."
+    ];
+
+    let messageIndex = 0;
+    setInterval(() => {
+      document.getElementById("message").textContent = messages[messageIndex % messages.length];
+      messageIndex++;
+    }, 5000);
+
+    function getJoke() {
+      const randomIndex = Math.floor(Math.random() * jokes.length);
+      document.getElementById("joke-text").innerHTML = jokes[randomIndex];
+    }
+
+    const boardSize = 10;
+    const board = document.getElementById("game-board");
+    const gameOverText = document.getElementById("game-over");
+    const coinCounter = document.getElementById("coin-count");
+    const highScoreCounter = document.getElementById("high-score-count");
+
+    let vanPos = { x: 5, y: 5 };
+    let treePositions = [];
+    let coinPositions = [];
+    let direction = { x: 0, y: -1 };
+    let gameOver = false;
+    let coins = 0;
+    let highScore = localStorage.getItem('highScore') || 0;
+    highScoreCounter.textContent = highScore;
+
+    const cells = [];
+    for (let y = 0; y < boardSize; y++) {
+      for (let x = 0; x < boardSize; x++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function index(x, y) {
+      return y * boardSize + x;
+    }
+
+    function drawBoard() {
+      cells.forEach(cell => {
+        cell.className = "cell";
+        cell.textContent = "";
+      });
+      treePositions.forEach(pos => {
+        const i = index(pos.x, pos.y);
+        cells[i].classList.add("tree");
+        cells[i].textContent = "🌳";
+      });
+      coinPositions.forEach(pos => {
+        const i = index(pos.x, pos.y);
+        cells[i].classList.add("coin");
+        cells[i].textContent = "🪙";
+      });
+      const vanIndex = index(vanPos.x, vanPos.y);
+      cells[vanIndex].classList.add("van");
+      cells[vanIndex].textContent = "🚐";
+    }
+
+    function moveVan() {
+      if (gameOver) return;
+      const newX = vanPos.x + direction.x;
+      const newY = vanPos.y + direction.y;
+      if (newX < 0 || newX >= boardSize || newY < 0 || newY >= boardSize) {
+        endGame();
+        return;
+      }
+
+      vanPos.x = newX;
+      vanPos.y = newY;
+
+      if (treePositions.some(pos => pos.x === vanPos.x && pos.y === vanPos.y)) {
+        endGame();
+        return;
+      }
+
+      const coinIndex = coinPositions.findIndex(pos => pos.x === vanPos.x && pos.y === vanPos.y);
+      if (coinIndex !== -1) {
+        coinPositions.splice(coinIndex, 1);
+        coins++;
+        coinCounter.textContent = coins;
+        if (coins > highScore) {
+          localStorage.setItem('highScore', coins);
+          highScoreCounter.textContent = coins;
+        }
+      }
+
+      drawBoard();
+    }
+
+    function endGame() {
+      gameOver = true;
+      gameOverText.style.display = "block";
+    }
+
+    function spawnTree() {
+      if (gameOver) return;
+      let tx = Math.floor(Math.random() * boardSize);
+      let ty = Math.floor(Math.random() * boardSize);
+      if (tx === vanPos.x && ty === vanPos.y) return;
+      treePositions.push({ x: tx, y: ty });
+    }
+
+    function spawnCoin() {
+      if (gameOver) return;
+      let cx = Math.floor(Math.random() * boardSize);
+      let cy = Math.floor(Math.random() * boardSize);
+      if ((cx === vanPos.x && cy === vanPos.y) || treePositions.some(t => t.x === cx && t.y === cy)) return;
+      coinPositions.push({ x: cx, y: cy });
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") direction = { x: 0, y: -1 };
+      if (e.key === "ArrowDown") direction = { x: 0, y: 1 };
+      if (e.key === "ArrowLeft") direction = { x: -1, y: 0 };
+      if (e.key === "ArrowRight") direction = { x: 1, y: 0 };
+    });
+
+    drawBoard();
+
+    let moveSpeed = 500;
+    let moveInterval = setInterval(moveVan, moveSpeed);
+    setInterval(spawnTree, 2000);
+    setInterval(spawnCoin, 3000);
+
+    setInterval(() => {
+      if (moveSpeed > 150) {
+        moveSpeed -= 50;
+        clearInterval(moveInterval);
+        moveInterval = setInterval(moveVan, moveSpeed);
+      }
+    }, 30000);
+  </script>
+</body>
+</html>
